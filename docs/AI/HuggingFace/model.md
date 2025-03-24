@@ -1,3 +1,61 @@
+# Model 입력과 반환
+```python
+model_output = self.model(**tokenized_text)
+```
+
+여기서 핵심은 `**tokenized_text` 가 **딕셔너리를 keyword argument 형태로 분해해서** 모델에 전달된다는 거예요.
+
+---
+
+## ✅ `**tokenized_text`의 의미
+
+- `**` 연산자는 **dictionary를 unpack해서 함수에 keyword 인자(키워드 파라미터)로 전달**해요.
+
+### 예시:
+```python
+tokenized_text = {
+    "input_ids": tensor([[101, 7592, 2088, 102, 0, 0]]),
+    "attention_mask": tensor([[1, 1, 1, 1, 0, 0]])
+}
+```
+
+이걸 `**tokenized_text`로 넘기면, 다음과 같이 동작해요:
+
+```python
+self.model(input_ids=..., attention_mask=...)
+```
+
+즉, 아래 두 코드는 **동일**합니다:
+
+```python
+self.model(**tokenized_text)
+# 와 동일:
+self.model(input_ids=tokenized_text["input_ids"], attention_mask=tokenized_text["attention_mask"])
+```
+
+---
+
+## ✅ 왜 이렇게 쓰는가?
+
+- Hugging Face의 모델들은 보통 다음과 같은 시그니처를 갖습니다:
+
+```python
+def forward(input_ids=None, attention_mask=None, token_type_ids=None, ...)
+```
+
+- 따라서 `tokenizer()`가 반환하는 딕셔너리의 키 이름과 모델 파라미터 이름이 일치하면, `**dict` 문법으로 깔끔하게 전달 가능해요.
+
+---
+
+## ✅ 정리
+
+| 표현 | 의미 |
+|------|------|
+| `**tokenized_text` | 딕셔너리를 key-value 쌍으로 분해해서 인자로 전달 |
+| 예시 | `self.model(input_ids=..., attention_mask=...)`와 동일 |
+| 장점 | 토크나이저 결과를 그대로 모델에 넘기기 쉬움 |
+
+--
 
 ## 🔹 1. 기본 호출 형태
 `embedding = self.model(token_ids)` 이 한 줄은 HuggingFace의 트랜스포머 모델에서 **가장 핵심적인 부분** 중 하나입니다.  
