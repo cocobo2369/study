@@ -91,12 +91,12 @@
 
 - 결국 MSE는 분산이랑 구조가 똑같다. 평균을 빼는 거 대신 예측값을 빼는 거니까. 즉 예측값과 실제값의 차이가 클수록 MSE가 커져 불순도가 높고, MSE가 작을수록 불순도가 낮을 것이다.
 
-### Information Gain
+### Information Gain(정보 이득)
 - 부모노드의 불순도와 부모노드 바로 아래 자식노드들의 불순도 합의 차이
 - 자식노드들에 대한 가중치는 데이터 개수비율
 
 $
-\text{Information Gain} = Entropy(N_P) - \sum_{i=1}^n w_i \times Entropy(N_{C_i})
+Information Gain = Entropy(N_P) - \sum_{i=1}^n w_i \times Entropy(N_{C_i})
 $
 
 - $ N_P $ : 부모 노드  
