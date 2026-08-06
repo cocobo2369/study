@@ -205,3 +205,50 @@ df_q2_nor = pd.DataFrame(arr_q2_nor, columns = df_q2.columns)
 df_q2_nor = df_q2_nor.add_suffix("_S")
 df_q2_nor.head(2)
 ```
+
+
+# 정규화는 X만!-특별할때 y!
+- fit은 Train에서만 한다.
+| 상황         | 정규화 대상      |
+| ---------- | ----------- |
+| KNN 회귀     | X만          |
+| KNN 분류     | X만          |
+| KMeans 군집  | X만          |
+| 로지스틱 회귀    | X만          |
+| 선형회귀/릿지/라쏘 | 보통 X만       |
+| y까지 정규화    | 문제에서 명시할 때만 |
+- 여기서 중요한 건 Test는 fit 하면 안 된다야.
+- 왜냐하면 모델은 Train 데이터로 공부했잖아.
+- 그러면 Test 데이터도 Train에서 배운 기준으로 변환해야 공정해.
+- MinMaxScaler의 fit은 min과 max를 찾는 것이다.
+```python
+scaler.fit(X_train)
+X_train_n = scaler.transform(X_train)
+X_test_n = scaledr.transform(X_test)
+
+X_train_n = scaler.fit_transform(X_train)
+X_test_n = scaledr.transform(X_test)
+```
+
+## “모든 변수를 대상으로 정규화”
+- "X_train" 안에 들어간 모든 독립변수를 정규화하라는 뜻
+- y_train은 정규화하지 않는다.
+- X = 독립변수들(train,test)
+- Y = 종속변수(train), 정답(test)
+    | 문제 문장           | 해석                    |
+    | --------------- | --------------------- |
+    | 모든 변수를 대상으로 정규화 | X에 포함된 모든 독립변수 정규화    |
+    | 모든 연속형 변수를 정규화  | 숫자형 X 변수만 정규화         |
+    | 종속변수도 정규화       | 이때만 y도 정규화            |
+    | target도 정규화     | 이때만 y도 정규화            |
+    | 모든 데이터를 정규화     | 보통 그래도 X만, 단 문맥 확인 필요 |
+
+# axis = 1은 당연하게 생각하면 된다. 축을 바꾸고 싶으면 axis를 생각하기
+- df.sum() --> 당연히 열 내의 합이다.
+- df.sum(axis = 1) --> 행의 합이된다.
+
+# all --> 행들의 모든 조건이 true일 때 true를 출력하는 series이다.
+```python
+df[cols].isna(['a','b']).all(axis=1) #모든 행이 true
+df[cols].isna(['a','b']).all(axis=0) #열내의 모든 값이 true
+```
