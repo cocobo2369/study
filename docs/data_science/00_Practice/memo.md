@@ -252,3 +252,5 @@ X_test_n = scaledr.transform(X_test)
 df[cols].isna(['a','b']).all(axis=1) #모든 행이 true
 df[cols].isna(['a','b']).all(axis=0) #열내의 모든 값이 true
 ```
+
+# 정확히 원하는 값만. isin([]), 문자열이면 str.contains()
