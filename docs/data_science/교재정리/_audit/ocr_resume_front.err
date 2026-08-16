@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "X:\study\docs\data_science\scripts\audit_textbook_pages.py", line 89, in <module>
+    main()
+  File "X:\study\docs\data_science\scripts\audit_textbook_pages.py", line 69, in main
+    pix = page.get_pixmap(matrix=fitz.Matrix(args.scale, args.scale), colorspace=fitz.csRGB, alpha=False)
+  File "X:\study\docs\data_science\.venv\lib\site-packages\fitz\utils.py", line 895, in get_pixmap
+    dl = page.get_displaylist(annots=annots)
+  File "X:\study\docs\data_science\.venv\lib\site-packages\fitz\fitz.py", line 6443, in get_displaylist
+    val = _fitz.Page_get_displaylist(self, annots)
+RuntimeError: Private data too large to pack into display list node

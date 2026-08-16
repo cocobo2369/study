@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "X:\study\docs\data_science\scripts\audit_textbook_pages.py", line 87, in <module>
+    main()
+  File "X:\study\docs\data_science\scripts\audit_textbook_pages.py", line 81, in main
+    stream.write(json.dumps(record, ensure_ascii=False) + "\n")
+UnicodeEncodeError: 'utf-8' codec can't encode character '\udf04' in position 83: surrogates not allowed

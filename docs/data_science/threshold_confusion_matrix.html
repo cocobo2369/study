@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Threshold와 혼동행렬</title>
+  <style>
+    :root { --blue:#2563eb; --red:#e11d48; --ink:#172033; --muted:#64748b; --line:#dbe3ee; --bg:#f3f7fb; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif; color:var(--ink); background:var(--bg); }
+    main { width:min(1000px,calc(100% - 32px)); margin:32px auto; }
+    h1 { margin:0 0 8px; font-size:clamp(26px,4vw,40px); }
+    .lead { margin:0 0 24px; color:var(--muted); }
+    .card { background:#fff; border:1px solid var(--line); border-radius:20px; padding:24px; box-shadow:0 12px 36px #1e293b10; }
+    .control { display:flex; align-items:center; gap:16px; margin-bottom:34px; }
+    input { flex:1; accent-color:var(--blue); }
+    output { min-width:76px; padding:8px 12px; border-radius:12px; color:#fff; background:var(--blue); font-size:20px; font-weight:800; text-align:center; }
+    .axis-wrap { padding:0 20px; }
+    .axis { position:relative; height:170px; border-bottom:5px solid var(--ink); }
+    .axis::before,.axis::after { position:absolute; bottom:-31px; font-weight:700; color:var(--muted); }
+    .axis::before { content:"0.0"; left:0; } .axis::after { content:"1.0"; right:0; }
+    .shade { position:absolute; top:0; bottom:0; right:0; background:#dbeafe88; transition:left .25s; }
+    .threshold { position:absolute; top:-12px; bottom:-5px; width:4px; background:var(--blue); transition:left .25s; }
+    .threshold span { position:absolute; top:-24px; left:50%; transform:translateX(-50%); white-space:nowrap; color:var(--blue); font-weight:800; }
+    .dot { position:absolute; width:34px; height:34px; border-radius:50%; display:grid; place-items:center; transform:translateX(-50%); color:#fff; font-size:12px; font-weight:800; border:3px solid #fff; box-shadow:0 3px 10px #0f172a33; transition:left .25s; }
+    .positive { background:var(--red); top:38px; } .negative { background:var(--blue); top:94px; }
+    .legend { display:flex; gap:18px; flex-wrap:wrap; margin:48px 0 18px; color:var(--muted); }
+    .legend i { display:inline-block; width:12px; height:12px; border-radius:50%; margin-right:6px; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    table { width:100%; border-collapse:separate; border-spacing:5px; text-align:center; }
+    th { padding:8px; color:var(--muted); font-size:14px; }
+    td { padding:16px 8px; border-radius:12px; background:#f1f5f9; font-size:15px; }
+    td strong { display:block; font-size:30px; color:var(--ink); }
+    .metrics { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; align-content:center; }
+    .metric { padding:15px; border:1px solid var(--line); border-radius:14px; }
+    .metric span { display:block; color:var(--muted); font-size:13px; }
+    .metric strong { font-size:25px; }
+    .rule { margin:22px 0 0; padding:16px; border-radius:14px; background:#eff6ff; color:#1e40af; text-align:center; font-weight:800; }
+    @media(max-width:700px){ .grid{grid-template-columns:1fr}.card{padding:18px}.dot{width:30px;height:30px}.control{align-items:flex-start;flex-direction:column}.control input{width:100%} }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Threshold가 높아지면?</h1>
+  <p class="lead">기준선을 움직여 양성 판정과 혼동행렬의 변화를 확인하세요.</p>
+  <section class="card">
+    <div class="control">
+      <label for="threshold"><strong>Threshold</strong></label>
+      <input id="threshold" type="range" min="0" max="100" value="50" aria-label="분류 임계값">
+      <output id="thresholdValue">0.50</output>
+    </div>
+    <div class="axis-wrap">
+      <div class="axis" id="axis">
+        <div class="shade" id="shade"></div>
+        <div class="threshold" id="line"><span>기준선</span></div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--red)"></i>● 실제 양성</span>
+      <span><i style="background:var(--blue)"></i>● 실제 음성</span>
+      <span>기준선 오른쪽 = 양성 예측</span>
+    </div>
+    <div class="grid">
+      <table aria-label="혼동행렬">
+        <thead><tr><th>실제 \ 예측</th><th>양성</th><th>음성</th></tr></thead>
+        <tbody>
+          <tr><th>실제 양성</th><td>TP<strong id="tp">0</strong></td><td>FN<strong id="fn">0</strong></td></tr>
+          <tr><th>실제 음성</th><td>FP<strong id="fp">0</strong></td><td>TN<strong id="tn">0</strong></td></tr>
+        </tbody>
+      </table>
+      <div class="metrics">
+        <div class="metric"><span>Precision 정밀도</span><strong id="precision">0%</strong></div>
+        <div class="metric"><span>Recall 재현율</span><strong id="recall">0%</strong></div>
+        <div class="metric"><span>양성 예측 수</span><strong id="predictedPositive">0</strong></div>
+        <div class="metric"><span>음성 예측 수</span><strong id="predictedNegative">0</strong></div>
+      </div>
+    </div>
+    <p class="rule">Threshold ↑ → 양성 판정 ↓ → TP·FP ↓ / FN·TN ↑</p>
+  </section>
+</main>
+<script>
+  const samples = [
+    {score:.30, positive:true},{score:.60, positive:true},{score:.70, positive:true},{score:.90, positive:true},
+    {score:.20, positive:false},{score:.40, positive:false},{score:.55, positive:false},{score:.80, positive:false}
+  ];
+  const axis = document.querySelector('#axis');
+  samples.forEach((s,i) => {
+    const el=document.createElement('div');
+    el.className=`dot ${s.positive?'positive':'negative'}`;
+    el.style.left=`${s.score*100}%`; el.textContent=s.score.toFixed(2).slice(1);
+    el.title=`실제 ${s.positive?'양성':'음성'}, 점수 ${s.score.toFixed(2)}`;
+    axis.appendChild(el);
+  });
+  const slider=document.querySelector('#threshold');
+  const set=(id,v)=>document.querySelector(id).textContent=v;
+  function update(){
+    const t=Number(slider.value)/100;
+    document.querySelector('#line').style.left=`${t*100}%`;
+    document.querySelector('#shade').style.left=`${t*100}%`;
+    set('#thresholdValue',t.toFixed(2));
+    let tp=0,fp=0,fn=0,tn=0;
+    samples.forEach(s=>{ const predicted=s.score>=t; if(s.positive&&predicted)tp++; else if(!s.positive&&predicted)fp++; else if(s.positive)fn++; else tn++; });
+    set('#tp',tp);set('#fp',fp);set('#fn',fn);set('#tn',tn);
+    set('#precision',tp+fp?`${Math.round(tp/(tp+fp)*100)}%`:'—');
+    set('#recall',tp+fn?`${Math.round(tp/(tp+fn)*100)}%`:'—');
+    set('#predictedPositive',tp+fp);set('#predictedNegative',tn+fn);
+  }
+  slider.addEventListener('input',update); update();
+</script>
+</body>
+</html>
