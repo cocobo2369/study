@@ -49,6 +49,23 @@ def orange_mask(image):
     return (red > 230) & (green > 75) & (green < 195) & (blue < 125)
 
 
+def is_two_column_layout(diamonds, width, height):
+    """Detect the textbook's 1,2 / 3,4 option grid.
+
+    Some grids keep the two columns relatively close together.  The former
+    20%-of-page threshold therefore treated chapter 9 question 5 as a vertical
+    list and mapped the highlighted option 4 to array position 3.
+    """
+    if len(diamonds) != 4:
+        return False
+    x_centers = [(item[0] + item[2]) / 2 for item in diamonds]
+    y_centers = [(item[1] + item[3]) / 2 for item in diamonds]
+    return (
+        max(x_centers) - min(x_centers) > 0.08 * width
+        and max(y_centers) - min(y_centers) > 0.04 * height
+    )
+
+
 def diamond_groups(image):
     """Return option diamonds as (left, top, right, bottom, orange count)."""
     height, width = image.shape[:2]
@@ -72,8 +89,7 @@ def diamond_groups(image):
     if not (2 <= len(diamonds) <= 4):
         raise RuntimeError("Expected two to four option diamonds, found {}".format(diamonds))
 
-    x_centers = [(item[0] + item[2]) / 2 for item in diamonds]
-    if len(diamonds) == 4 and max(x_centers) - min(x_centers) > 0.20 * width:
+    if is_two_column_layout(diamonds, width, height):
         # Two-column layout numbers options down the left column, then down the
         # right column (1,2 / 3,4).
         diamonds.sort(key=lambda item: ((item[0] + item[2]) / 2, (item[1] + item[3]) / 2))
@@ -103,10 +119,7 @@ def extract_question(reader, question_image, answer_image):
     height, width = question_image.shape[:2]
     x_centers = [(left + right) / 2 for left, _, right, _, _ in question_groups]
     y_centers = [(top + bottom) / 2 for _, top, _, bottom, _ in question_groups]
-    grid_layout = (
-        len(question_groups) == 4
-        and max(x_centers) - min(x_centers) > 0.20 * width
-    )
+    grid_layout = is_two_column_layout(question_groups, width, height)
 
     stem_bottom = (min(item[1] for item in question_groups) / height) - 0.025
     stem = read_crop(reader, question_image, 0.07, 0.00, 0.98, stem_bottom)

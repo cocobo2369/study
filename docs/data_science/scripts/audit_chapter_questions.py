@@ -10,6 +10,8 @@ BAD_OCR_TOKENS = [
     "확출", "관속", "주정", "정구분포", "제급", "문제 풀이 Q", "문제풀이 Q",
 ]
 
+CIRCLED_TO_NUMBER = {"①": 1, "②": 2, "③": 3, "④": 4}
+
 
 def github_slug(title):
     title = re.sub(r"<[^>]+>", "", title).strip().lower()
@@ -75,8 +77,35 @@ def main():
                         chapter, question_number, expected_options, len(rationales)
                     )
                 )
-            if len(re.findall(r"(?m)^\*\*정답: [①②③④] .+\*\*$", block)) != 1:
+            answer_lines = re.findall(
+                r"(?m)^\*\*정답: ([①②③④]) .+\*\*$", block
+            )
+            if len(answer_lines) != 1:
                 errors.append("ch{:02d} q{}: answer line count error".format(chapter, question_number))
+            else:
+                actual_answer = CIRCLED_TO_NUMBER[answer_lines[0]]
+                expected_answer = BANK[chapter][question_number - 1]["answer"]
+                if actual_answer != expected_answer:
+                    errors.append(
+                        "ch{:02d} q{}: answer {} != bank {}".format(
+                            chapter, question_number, actual_answer, expected_answer
+                        )
+                    )
+
+                verdicts = re.findall(
+                    r"(?m)^- \*\*([①②③④]) (정답|오답):\*\* .+$", block
+                )
+                marked_correct = [
+                    CIRCLED_TO_NUMBER[label]
+                    for label, verdict in verdicts
+                    if verdict == "정답"
+                ]
+                if marked_correct != [expected_answer]:
+                    errors.append(
+                        "ch{:02d} q{}: rationale answer marks {} != [{}]".format(
+                            chapter, question_number, marked_correct, expected_answer
+                        )
+                    )
 
             for anchor in re.findall(r"\]\(#([^)]+)\)", block):
                 if anchor.startswith("ch{:02d}-q".format(chapter)):
